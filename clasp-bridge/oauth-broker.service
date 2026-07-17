@@ -1,0 +1,28 @@
+[Unit]
+Description=edtechathon central OAuth broker (Google -> clasp credential delivery)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust WorkingDirectory/ExecStart paths to wherever you deploy the broker.
+WorkingDirectory=/opt/oauth-broker
+ExecStart=/usr/bin/env node /opt/oauth-broker/broker.js
+Restart=on-failure
+RestartSec=2
+
+# --- configuration (override to taste) ---
+Environment=BROKER_PORT=4747
+Environment=BROKER_PUBLIC_ORIGIN=https://oauth.edtechathon.com
+Environment=BROKER_ALLOWED_SUFFIXES=.edtechathon.com
+Environment=BROKER_CREDS=/opt/oauth-broker/creds.json
+Environment=BROKER_HOOK=/opt/oauth-broker/hooks/on-authed.sh
+Environment=BROKER_OUT_DIR=/tmp/oauth-broker
+
+# Hardening (relax if your hook needs more access).
+NoNewPrivileges=true
+PrivateTmp=false
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
