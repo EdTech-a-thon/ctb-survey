@@ -261,7 +261,7 @@ async function copyToClipboard(text, button) {
     button.innerHTML = '<svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" /></svg> Copied';
     window.setTimeout(() => {
       button.classList.remove("copied");
-      button.innerHTML = '<svg viewBox="0 0 20 20"><path d="M7 7V4h9v9h-3M4 7h9v9H4Z" /></svg> Copy LaTeX';
+      button.innerHTML = '<svg viewBox="0 0 20 20"><path d="M7 7V4h9v9h-3M4 7h9v9H4Z" /></svg> LaTeX';
     }, 1800);
   };
 
@@ -278,6 +278,107 @@ async function copyToClipboard(text, button) {
     textArea.remove();
     if (copied) showSuccess();
   }
+}
+
+function renderEquation(card, expression) {
+  const displayLatex = formatToLatex(expression);
+  const math = window.katex
+    ? window.katex.renderToString(displayLatex, { throwOnError: false, displayMode: false })
+    : escapeAttribute(expression);
+  card.dataset.expression = expression;
+  card.querySelector(".math-display").innerHTML = math;
+}
+
+function cloneWithInlineStyles(element) {
+  const clone = element.cloneNode(true);
+  const originalNodes = [element, ...element.querySelectorAll("*")];
+  const clonedNodes = [clone, ...clone.querySelectorAll("*")];
+  const properties = [
+    "align-items", "border-bottom", "box-sizing", "color", "display", "font-family",
+    "font-size", "font-style", "font-weight", "height", "justify-content", "left",
+    "letter-spacing", "line-height", "margin", "padding", "position", "text-align",
+    "top", "transform", "transform-origin", "vertical-align", "white-space", "width",
+  ];
+
+  originalNodes.forEach((node, index) => {
+    const styles = window.getComputedStyle(node);
+    properties.forEach((property) => clonedNodes[index].style.setProperty(property, styles.getPropertyValue(property)));
+  });
+  clone.style.display = "flex";
+  clone.style.overflow = "visible";
+  return clone.outerHTML;
+}
+
+function equationToPng(card) {
+  const source = card.querySelector(".math-display");
+  const width = Math.max(320, Math.ceil(source.scrollWidth) + 64);
+  const height = Math.max(110, Math.ceil(source.scrollHeight) + 40);
+  const content = cloneWithInlineStyles(source);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <foreignObject width="100%" height="100%">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:20px 32px;color:#182e28;background:transparent;font-size:24px;">
+        ${content}
+      </div>
+    </foreignObject>
+  </svg>`;
+
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    image.onload = () => {
+      const scale = 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const context = canvas.getContext("2d");
+      context.scale(scale, scale);
+      context.drawImage(image, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Image creation failed")), "image/png");
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Equation image could not be rendered"));
+    };
+    image.src = url;
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+async function copyEquationImage(card, button) {
+  const originalContent = button.innerHTML;
+  button.textContent = "Creating...";
+
+  try {
+    const blob = await equationToPng(card);
+    if (navigator.clipboard?.write && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        button.classList.add("copied");
+        button.innerHTML = '<svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" /></svg> Image copied';
+      } catch {
+        downloadBlob(blob, `math-question-${Number(card.dataset.index) + 1}.png`);
+        button.innerHTML = '<svg viewBox="0 0 20 20"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" /></svg> Downloaded';
+      }
+    } else {
+      downloadBlob(blob, `math-question-${Number(card.dataset.index) + 1}.png`);
+      button.innerHTML = '<svg viewBox="0 0 20 20"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" /></svg> Downloaded';
+    }
+  } catch {
+    button.textContent = "Try again";
+  }
+
+  window.setTimeout(() => {
+    button.classList.remove("copied");
+    button.innerHTML = originalContent;
+  }, 2000);
 }
 
 async function copySettingsLink() {
@@ -320,7 +421,6 @@ function renderSamples() {
   elements.results.innerHTML = Array.from({ length: 4 }, (_, index) => {
     const data = generateQuestion(template, settings);
     const displayLatex = formatToLatex(data.question);
-    const docsLatex = formatToLatex(data.question, true);
     const math = window.katex
       ? window.katex.renderToString(displayLatex, { throwOnError: false, displayMode: false })
       : escapeAttribute(data.question);
@@ -328,14 +428,27 @@ function renderSamples() {
       ? Object.entries(data.variables).map(([key, value]) => `<span class="variable-pill">${key} = ${value}</span>`).join("")
       : '<span class="no-variables">No reusable variables in this template</span>';
 
-    return `<article class="result-card">
+    return `<article class="result-card" data-index="${index}" data-expression="${escapeAttribute(data.question)}">
       <div class="result-top">
         <span class="sample-number">Question ${String(index + 1).padStart(2, "0")}</span>
-        <button class="copy-button" type="button" data-latex="${escapeAttribute(docsLatex)}">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 7V4h9v9h-3M4 7h9v9H4Z" /></svg> Copy LaTeX
-        </button>
+        <div class="result-actions">
+          <button class="result-action edit-button" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5 3 3M4 16l1-4L13.5 3.5a1.4 1.4 0 0 1 2 2L7 14l-3 2Z" /></svg> Edit
+          </button>
+          <button class="result-action copy-text-button" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 7V4h9v9h-3M4 7h9v9H4Z" /></svg> LaTeX
+          </button>
+          <button class="result-action copy-image-button" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14v12H3ZM6 13l3-3 2 2 2-2 3 3M7 8h.01" /></svg> Image
+          </button>
+        </div>
       </div>
       <div class="math-display">${math}</div>
+      <div class="equation-editor">
+        <label for="equation-${index}">Edit this equation</label>
+        <input id="equation-${index}" class="equation-input" type="text" value="${escapeAttribute(data.question)}" spellcheck="false">
+        <p class="edit-hint">Changes apply only to this question. Press Enter or click Done when finished.</p>
+      </div>
       <div class="variables">${variables}</div>
     </article>`;
   }).join("");
@@ -365,8 +478,32 @@ elements.rules.addEventListener("click", (event) => {
 });
 
 elements.results.addEventListener("click", (event) => {
-  const button = event.target.closest(".copy-button");
-  if (button) copyToClipboard(button.dataset.latex, button);
+  const button = event.target.closest("button");
+  const card = event.target.closest(".result-card");
+  if (!button || !card) return;
+
+  if (button.classList.contains("edit-button")) {
+    const editing = card.classList.toggle("is-editing");
+    button.innerHTML = editing
+      ? '<svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" /></svg> Done'
+      : '<svg viewBox="0 0 20 20"><path d="m12.5 4.5 3 3M4 16l1-4L13.5 3.5a1.4 1.4 0 0 1 2 2L7 14l-3 2Z" /></svg> Edit';
+    if (editing) card.querySelector(".equation-input").focus();
+  } else if (button.classList.contains("copy-text-button")) {
+    copyToClipboard(formatToLatex(card.dataset.expression, true), button);
+  } else if (button.classList.contains("copy-image-button")) {
+    copyEquationImage(card, button);
+  }
+});
+
+elements.results.addEventListener("input", (event) => {
+  if (!event.target.classList.contains("equation-input")) return;
+  renderEquation(event.target.closest(".result-card"), event.target.value);
+});
+
+elements.results.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !event.target.classList.contains("equation-input")) return;
+  event.preventDefault();
+  event.target.closest(".result-card").querySelector(".edit-button").click();
 });
 
 elements.addRule.addEventListener("click", () => {

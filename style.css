@@ -135,14 +135,21 @@ input:focus, select:focus { background: white; border-color: #689486; box-shadow
 .result-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; min-height: 176px; overflow: hidden; padding: 19px 20px 16px; position: relative; transition: box-shadow 160ms ease, transform 160ms ease; }
 .result-card:hover { box-shadow: 0 14px 35px rgba(35, 59, 51, 0.08); transform: translateY(-2px); }
 .result-card::before { background: var(--lime); content: ""; height: 3px; left: 0; position: absolute; top: 0; width: 48px; }
-.result-top { align-items: center; display: flex; justify-content: space-between; }
+.result-top { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.result-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-end; }
 .sample-number { color: #7d8882; font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
-.copy-button { align-items: center; background: transparent; border: 0; border-radius: 7px; color: var(--green); display: flex; font-size: 9px; font-weight: 700; gap: 5px; padding: 6px 7px; }
-.copy-button:hover { background: #edf2ec; }
-.copy-button.copied { background: #e1efe5; color: #287048; }
-.copy-button svg { height: 13px; width: 13px; }
+.result-action { align-items: center; background: transparent; border: 0; border-radius: 7px; color: var(--green); display: flex; font-size: 9px; font-weight: 700; gap: 5px; padding: 6px 7px; }
+.result-action:hover { background: #edf2ec; }
+.result-action.copied { background: #e1efe5; color: #287048; }
+.result-action svg { height: 13px; width: 13px; }
 .math-display { align-items: center; display: flex; font-size: 20px; min-height: 78px; overflow-x: auto; padding: 13px 1px 9px; scrollbar-width: none; }
 .math-display::-webkit-scrollbar { display: none; }
+.equation-editor { display: none; padding: 11px 0 13px; }
+.result-card.is-editing .math-display { display: none; }
+.result-card.is-editing .equation-editor { display: block; }
+.equation-editor label { color: #7d8882; display: block; font-size: 8px; font-weight: 800; letter-spacing: 0.07em; margin-bottom: 6px; text-transform: uppercase; }
+.equation-editor input { font-family: var(--mono); font-size: 11px; padding: 10px 11px; width: 100%; }
+.edit-hint { color: #929b96; font-size: 8px; margin: 5px 1px 0; }
 .variables { align-items: center; border-top: 1px solid #eceee9; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px; }
 .variable-pill { background: #edf2ea; border-radius: 5px; color: #547064; font-family: var(--mono); font-size: 9px; padding: 4px 7px; }
 .no-variables { color: #9aa29e; font-size: 9px; font-style: italic; }
@@ -185,6 +192,7 @@ footer p { color: #89928d; font-family: var(--mono); font-size: 9px; margin: 0; 
   .share-button { justify-content: center; min-height: 43px; }
   .results-section { padding: 55px 0 65px; }
   .results-grid { grid-template-columns: 1fr; }
+  .result-top { align-items: flex-start; }
   .results-heading > p { display: none; }
   footer { gap: 20px; }
 }
