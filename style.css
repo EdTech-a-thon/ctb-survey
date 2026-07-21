@@ -145,6 +145,7 @@ input:focus, select:focus { background: white; border-color: #689486; box-shadow
 .result-action svg { height: 13px; width: 13px; }
 .button-spinner { animation: spin 700ms linear infinite; border: 1.5px solid #b8c7bf; border-radius: 50%; border-top-color: var(--green); height: 11px; width: 11px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.image-export-stage { align-items: center; background: #fff; color: #182e28; display: flex; font-size: 24px; justify-content: center; left: -10000px; overflow: visible; padding: 20px 32px; position: fixed; top: 0; }
 .math-display { align-items: center; display: flex; font-size: 20px; min-height: 78px; overflow-x: auto; padding: 13px 1px 9px; scrollbar-width: none; }
 .math-display::-webkit-scrollbar { display: none; }
 .equation-editor { display: none; padding: 11px 0 13px; }
