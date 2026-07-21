@@ -303,6 +303,7 @@ async function equationToPng(card) {
   document.body.append(exportNode);
 
   try {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const renderPromise = toBlob(exportNode, {
       backgroundColor: "#ffffff",
       cacheBust: true,
