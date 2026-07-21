@@ -306,7 +306,8 @@ function cloneWithInlineStyles(element) {
   });
   clone.style.display = "flex";
   clone.style.overflow = "visible";
-  return clone.outerHTML;
+  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  return new XMLSerializer().serializeToString(clone);
 }
 
 function equationToPng(card) {
@@ -316,7 +317,7 @@ function equationToPng(card) {
   const content = cloneWithInlineStyles(source);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <foreignObject width="100%" height="100%">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:20px 32px;color:#182e28;background:transparent;font-size:24px;">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:20px 32px;color:#182e28;background:#ffffff;font-size:24px;">
         ${content}
       </div>
     </foreignObject>
@@ -325,18 +326,27 @@ function equationToPng(card) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    const timeout = window.setTimeout(() => {
+      image.src = "";
+      URL.revokeObjectURL(url);
+      reject(new Error("Image rendering timed out"));
+    }, 4000);
     image.onload = () => {
+      window.clearTimeout(timeout);
       const scale = 2;
       const canvas = document.createElement("canvas");
       canvas.width = width * scale;
       canvas.height = height * scale;
       const context = canvas.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
       context.scale(scale, scale);
       context.drawImage(image, 0, 0, width, height);
       URL.revokeObjectURL(url);
       canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Image creation failed")), "image/png");
     };
     image.onerror = () => {
+      window.clearTimeout(timeout);
       URL.revokeObjectURL(url);
       reject(new Error("Equation image could not be rendered"));
     };
@@ -354,28 +364,33 @@ function downloadBlob(blob, filename) {
 
 async function copyEquationImage(card, button) {
   const originalContent = button.innerHTML;
-  button.textContent = "Creating...";
+  button.disabled = true;
+  button.innerHTML = '<span class="button-spinner" aria-hidden="true"></span> Creating';
 
   try {
-    const blob = await equationToPng(card);
+    const blobPromise = equationToPng(card);
     if (navigator.clipboard?.write && window.ClipboardItem) {
       try {
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        // Passing the pending image keeps clipboard permission tied to the original click.
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
         button.classList.add("copied");
         button.innerHTML = '<svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" /></svg> Image copied';
       } catch {
+        const blob = await blobPromise;
         downloadBlob(blob, `math-question-${Number(card.dataset.index) + 1}.png`);
         button.innerHTML = '<svg viewBox="0 0 20 20"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" /></svg> Downloaded';
       }
     } else {
+      const blob = await blobPromise;
       downloadBlob(blob, `math-question-${Number(card.dataset.index) + 1}.png`);
       button.innerHTML = '<svg viewBox="0 0 20 20"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" /></svg> Downloaded';
     }
   } catch {
-    button.textContent = "Try again";
+    button.textContent = "Image failed";
   }
 
   window.setTimeout(() => {
+    button.disabled = false;
     button.classList.remove("copied");
     button.innerHTML = originalContent;
   }, 2000);
