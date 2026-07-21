@@ -12,7 +12,68 @@ const elements = {
   results: document.querySelector("#resultsList"),
   generate: document.querySelector("#generateBtn"),
   addRule: document.querySelector("#addRuleBtn"),
+  share: document.querySelector("#shareBtn"),
+  shareStatus: document.querySelector("#shareStatus"),
 };
+
+function encodeConfiguration(configuration) {
+  const bytes = new TextEncoder().encode(JSON.stringify(configuration));
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeConfiguration(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function getConfiguration() {
+  return {
+    version: 1,
+    template: elements.template.value,
+    min: elements.min.value,
+    max: elements.max.value,
+    decimals: elements.decimals.value,
+    excludeZero: elements.excludeZero.checked,
+    rules: customRules,
+  };
+}
+
+function restoreConfigurationFromUrl() {
+  const encoded = new URLSearchParams(window.location.search).get("setup");
+  if (!encoded) return false;
+
+  try {
+    const configuration = decodeConfiguration(encoded);
+    if (configuration.version !== 1 || !Array.isArray(configuration.rules)) throw new Error("Unsupported settings link");
+
+    elements.template.value = String(configuration.template ?? "");
+    elements.min.value = String(configuration.min ?? -10);
+    elements.max.value = String(configuration.max ?? 10);
+    elements.decimals.value = ["0", "1", "2", "3"].includes(String(configuration.decimals))
+      ? String(configuration.decimals)
+      : "0";
+    elements.excludeZero.checked = Boolean(configuration.excludeZero);
+    customRules = configuration.rules.slice(0, 99).map((rule, index) => ({
+      id: Number(rule.id) || Date.now() + index,
+      varIndex: String(rule.varIndex || index + 1),
+      type: ["range", "square", "multiple", "formula"].includes(rule.type) ? rule.type : "range",
+      min: Number(rule.min) || 0,
+      max: Number(rule.max) || 0,
+      step: Number(rule.step) || 1,
+      formula: String(rule.formula || ""),
+    }));
+    elements.shareStatus.textContent = "Saved settings restored from this link.";
+    return true;
+  } catch {
+    elements.shareStatus.textContent = "This settings link could not be read. The default setup is shown instead.";
+    return false;
+  }
+}
 
 function getRandomValue(min, max, excludeZero, decimals = 0) {
   const factor = 10 ** decimals;
@@ -219,6 +280,39 @@ async function copyToClipboard(text, button) {
   }
 }
 
+async function copySettingsLink() {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("setup", encodeConfiguration(getConfiguration()));
+  const originalContent = elements.share.innerHTML;
+
+  try {
+    await navigator.clipboard.writeText(url.toString());
+  } catch {
+    const textArea = document.createElement("textarea");
+    textArea.value = url.toString();
+    textArea.style.cssText = "position:fixed;opacity:0";
+    document.body.append(textArea);
+    textArea.select();
+    const copied = document.execCommand("copy");
+    textArea.remove();
+    if (!copied) {
+      elements.shareStatus.textContent = "Copy was blocked. Select and copy the link from your browser's address bar.";
+      window.history.replaceState({}, "", url);
+      return;
+    }
+  }
+
+  elements.share.classList.add("copied");
+  elements.share.innerHTML = '<svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9" /></svg> Link copied';
+  elements.shareStatus.textContent = "Anyone with this link can open your current generator setup.";
+  window.setTimeout(() => {
+    elements.share.classList.remove("copied");
+    elements.share.innerHTML = originalContent;
+  }, 2000);
+}
+
 function renderSamples() {
   const template = elements.template.value.trim() || "sqrt(R(1)) + (x + R(2)) // R(2) = 10";
   const settings = getSettings();
@@ -284,11 +378,13 @@ elements.addRule.addEventListener("click", () => {
 });
 
 elements.generate.addEventListener("click", renderSamples);
+elements.share.addEventListener("click", copySettingsLink);
 [elements.template, elements.min, elements.max, elements.decimals, elements.excludeZero].forEach((element) => {
   element.addEventListener("input", renderSamples);
   element.addEventListener("change", renderSamples);
 });
 
+restoreConfigurationFromUrl();
 window.addEventListener("load", renderSamples);
 renderRules();
 renderSamples();

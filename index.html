@@ -153,11 +153,18 @@
             <div id="rulesList" class="rules-list" aria-live="polite"></div>
           </section>
 
-          <button id="generateBtn" class="generate-button" type="button">
-            <span class="button-spark" aria-hidden="true">✦</span>
-            Generate 4 new questions
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6 6" /></svg>
-          </button>
+          <div class="builder-actions">
+            <button id="generateBtn" class="generate-button" type="button">
+              <span class="button-spark" aria-hidden="true">✦</span>
+              Generate 4 new questions
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6 6" /></svg>
+            </button>
+            <button id="shareBtn" class="share-button" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 12l4-4M6.5 14.5l-1 1a2.8 2.8 0 0 1-4-4l3-3a2.8 2.8 0 0 1 4 0M13.5 5.5l1-1a2.8 2.8 0 0 1 4 4l-3 3a2.8 2.8 0 0 1-4 0" /></svg>
+              Copy settings link
+            </button>
+          </div>
+          <p id="shareStatus" class="share-status" aria-live="polite"></p>
         </section>
       </div>
 
