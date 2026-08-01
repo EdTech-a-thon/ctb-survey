@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Create reusable, randomized math questions with custom variable rules."
+    />
+    <title>Math Forge | Question Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+    />
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Math Forge home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 7h14M7 12h10M9 17h6" /></svg>
+        </span>
+        <span>Math Forge</span>
+      </a>
+      <div class="header-status"><span></span> Ready to generate</div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Question builder / 01</p>
+          <h1>Build better math practice, <em>in seconds.</em></h1>
+        </div>
+        <p class="hero-copy">
+          Write one flexible template, set your number rules, and create a fresh set of
+          classroom-ready questions whenever you need them.
+        </p>
+      </section>
+
+      <div class="workspace">
+        <aside class="guide-card" aria-labelledby="guide-title">
+          <div class="guide-heading">
+            <span class="guide-icon" aria-hidden="true">?</span>
+            <div>
+              <p class="section-kicker">Quick guide</p>
+              <h2 id="guide-title">Template syntax</h2>
+            </div>
+          </div>
+
+          <ol class="syntax-list">
+            <li>
+              <span class="step-number">01</span>
+              <div>
+                <strong>Reusable values</strong>
+                <p>Use <code>R(1)</code>, <code>R(2)</code>, and so on. Each value stays consistent within a question.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-number">02</span>
+              <div>
+                <strong>Fractions</strong>
+                <p>Use two slashes, such as <code>(x + 1) // 2</code>.</p>
+              </div>
+            </li>
+            <li>
+              <span class="step-number">03</span>
+              <div>
+                <strong>Square roots</strong>
+                <p>Use <code>sqrt(R(1))</code> or <code>\sqrt{R(1)}</code>.</p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="tip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M8.5 14.5A6 6 0 1 1 15.5 14.5C14.6 15.2 14 16.1 14 17h-4c0-.9-.6-1.8-1.5-2.5Z" /></svg>
+            <p><strong>Teacher tip</strong> Add a perfect square rule when using square roots to keep answers tidy.</p>
+          </div>
+        </aside>
+
+        <section class="builder-card" aria-labelledby="builder-title">
+          <div class="card-heading">
+            <div>
+              <p class="section-kicker">Generator setup</p>
+              <h2 id="builder-title">Design your question</h2>
+            </div>
+            <span class="draft-pill">Live preview</span>
+          </div>
+
+          <div class="field template-field">
+            <label for="templateInput">Problem template</label>
+            <div class="template-input-wrap">
+              <span aria-hidden="true">ƒ</span>
+              <input
+                id="templateInput"
+                type="text"
+                value="\sqrt{R(1)} + (x + R(2)) // R(2) = 10"
+                placeholder="e.g. sqrt(R(1)) + (x + R(2)) // R(2) = 10"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+
+          <fieldset class="settings-group">
+            <legend>Global number settings</legend>
+            <div class="settings-grid">
+              <div class="field">
+                <label for="minValue">Minimum</label>
+                <input id="minValue" type="number" value="-10" step="any" />
+              </div>
+              <div class="field">
+                <label for="maxValue">Maximum</label>
+                <input id="maxValue" type="number" value="10" step="any" />
+              </div>
+              <div class="field">
+                <label for="decimalPlaces">Precision</label>
+                <select id="decimalPlaces">
+                  <option value="0">Whole numbers</option>
+                  <option value="1">1 decimal place</option>
+                  <option value="2">2 decimal places</option>
+                  <option value="3">3 decimal places</option>
+                </select>
+              </div>
+              <label class="check-field" for="excludeZero">
+                <input id="excludeZero" type="checkbox" checked />
+                <span class="custom-check"><svg viewBox="0 0 16 16"><path d="m3 8 3 3 7-7" /></svg></span>
+                <span><strong>Exclude zero</strong><small>Avoid 0 as a random value</small></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <section class="rules-section" aria-labelledby="rules-title">
+            <div class="rules-heading">
+              <div>
+                <h3 id="rules-title">Variable rules</h3>
+                <p>Give individual variables their own behavior.</p>
+              </div>
+              <button type="button" id="addRuleBtn" class="secondary-button">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+                Add rule
+              </button>
+            </div>
+            <div id="rulesList" class="rules-list" aria-live="polite"></div>
+          </section>
+
+          <div class="builder-actions">
+            <button id="generateBtn" class="generate-button" type="button">
+              <span class="button-spark" aria-hidden="true">✦</span>
+              Generate 4 new questions
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6 6" /></svg>
+            </button>
+            <button id="shareBtn" class="share-button" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 12l4-4M6.5 14.5l-1 1a2.8 2.8 0 0 1-4-4l3-3a2.8 2.8 0 0 1 4 0M13.5 5.5l1-1a2.8 2.8 0 0 1 4 4l-3 3a2.8 2.8 0 0 1-4 0" /></svg>
+              Copy settings link
+            </button>
+          </div>
+          <p id="shareStatus" class="share-status" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <section class="results-section" aria-labelledby="results-title">
+        <div class="results-heading">
+          <div>
+            <p class="section-kicker">Your question set</p>
+            <h2 id="results-title">Generated samples</h2>
+          </div>
+          <p><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 6v4l3 2M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" /></svg> Updated just now</p>
+        </div>
+        <div id="resultsList" class="results-grid" aria-live="polite"></div>
+        <p class="copy-note">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 14v.01M8.4 7.5a2 2 0 1 1 2.3 2c-.5.2-.7.7-.7 1.5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" /></svg>
+          Edit any result before copying it as LaTeX or a transparent PNG image.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true">=</span> Math Forge</a>
+      <p>Made for curious classrooms.</p>
+    </footer>
+  </body>
+</html>
